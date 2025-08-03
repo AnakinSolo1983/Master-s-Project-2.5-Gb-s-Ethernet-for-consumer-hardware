@@ -1,0 +1,739 @@
+From d42e84884986e2b6a554ecdd4f9fc772be63edb0 Mon Sep 17 00:00:00 2001
+From: Konstantin Ananyev <konstantin.ananyev@huawei.com>
+Date: Sun, 13 Jul 2025 19:45:50 +0100
+Subject: [PATCH] acl: support BPF(XDP) WIP(3)
+
+what is done:
+=============
+
+- In userspace changed test-acl to add ability to fill already created
+map.
+- Small changes in xdp prog.
+
+How it supposed to work:
+========================
+
+1) load xdp prog:
+ip netns exec ns1 xdp-loader load -vv eth5 /home/kananyev/dpdk-acl-bpf/app/test-acl/xdp_acl3.o
+
+2) check what map ids where created:
+ip netns exec ns1 bpftool map show
+2: prog_array  name hid_jmp_table  flags 0x0
+        key 4B  value 4B  max_entries 1024  memlock 8512B
+        owner_prog_type tracing  owner jited
+13: hash_of_maps  name cgroup_hash  flags 0x0
+        key 8B  value 4B  max_entries 2048  memlock 191296B
+        pids systemd(1), (sd-pam)(246723), (sd-pam)(247075)
+884: array  name acl_ctx  flags 0x0
+        key 4B  value 1360B  max_entries 1  memlock 1680B
+        btf_id 1395
+885: array  name acl_trans  flags 0x0
+        key 4B  value 8B  max_entries 4194304  memlock 33554752B
+        btf_id 1395
+886: array  name .rodata.cst32  flags 0x80
+        key 4B  value 32B  max_entries 1  memlock 352B
+        frozen
+887: array  name xdp_acl3.rodata  flags 0x480
+        key 4B  value 69B  max_entries 1  memlock 8192B
+        btf_id 1395  frozen
+888: array  name .rodata.str1.1  flags 0x80
+        key 4B  value 15B  max_entries 1  memlock 336B
+        frozen
+899: array  name pid_iter.rodata  flags 0x480
+        key 4B  value 4B  max_entries 1  memlock 8192B
+        btf_id 1422  frozen
+        pids bpftool(250308)
+900: array  name libbpf_det_bind  flags 0x0
+        key 4B  value 32B  max_entries 1  memlock 352B
+
+IDs that we want to update: 884 and 885
+
+2) Fill the maps:
+
+stdbuf -o0 -e0 ./dpdk-acl-bpf/x86_64-default-linuxapp-gcc13-dbg/app/dpdk-test-acl -n 12 --lcores='120' --no-pci --no-huge --log-level "debug" -- --rulesf=./dts/dep/test-acl-input/acl1v4_10k_rule --tracef=./dts/dep/test-acl-input/acl1v4_10k_trace --tracestep=1 --iter=1 --verbose=0 --rulenum=100000 --bpf=884:885
+
+3) After that mapped should be filled and our XDP prog should classify
+the packets according the rules.
+
+As a test:
+on scapy:
+a=rdpcap("/home/kananyev/test/acl/acl1v4_10k_trace_u1.pcap")
+
+sendp(a, iface="eth9")
+
+With xdp prog loaded and rules populated we shouldn't see any of these
+packets passing through (run tcpdump or your server iface)
+
+While good packets should be allowed, i.e.:
+ip netns exec ns2 ping -c 10 <server ip>
+and
+ip netns exec ns2 wget 192.168.22.1:6000
+should work
+
+When program is unloaded all bad packets (from pcap) should be seen in
+tcpdump on server iface.
+
+Signed-off-by: Konstantin Ananyev <konstantin.ananyev@huawei.com>
+---
+ app/test-acl/main.c     |  85 +++++++++---
+ app/test-acl/xdp_acl3.c | 289 ++++++++++++++++++++++++++++++++++++++++
+ lib/acl/acl_bpf.c       | 123 ++++++++++++-----
+ lib/acl/rte_acl.h       |   2 +
+ 4 files changed, 446 insertions(+), 53 deletions(-)
+ create mode 100644 app/test-acl/xdp_acl3.c
+
+diff --git a/app/test-acl/main.c b/app/test-acl/main.c
+index a7dac8059d..bbf2ec5b63 100644
+--- a/app/test-acl/main.c
++++ b/app/test-acl/main.c
+@@ -101,6 +101,17 @@ static const struct acl_alg acl_alg[] = {
+ 	},
+ };
+ 
++enum bpf_opt {
++	BPF_DISABLED = 0,
++	BPF_TEST = 1,
++	BPF_FILL = 2,
++};
++
++struct bpf_conf {	
++	enum bpf_opt opt;
++	struct rte_acl_bpf bpx;
++};
++
+ static struct {
+ 	const char         *prgname;
+ 	const char         *rule_file;
+@@ -119,8 +130,7 @@ static struct {
+ 	uint32_t            used_traces;
+ 	void               *traces;
+ 	struct rte_acl_ctx *acx;
+-	bool use_bpf;
+-	struct rte_acl_bpf bpx;
++	struct bpf_conf bpf;
+ } config = {
+ 	.bld_categories = 3,
+ 	.run_categories = 1,
+@@ -134,7 +144,7 @@ static struct {
+ 		.alg = RTE_ACL_CLASSIFY_DEFAULT,
+ 	},
+ 	.ipv6 = IPV6_FRMT_NONE,
+-	.use_bpf = false,
++	.bpf.opt = BPF_DISABLED,
+ };
+ 
+ static struct rte_acl_param prm = {
+@@ -961,11 +971,12 @@ add_cb_rules(FILE *f, struct rte_acl_ctx *ctx)
+ }
+ 
+ static void
+-print_acl_bpf_ctx(const struct rte_acl_bpf *bpx)
++print_bpf_conf(const struct bpf_conf *cfg)
+ {
+-	printf("acl_bpf={\n");
+-	printf("\tctx_fd=%d,\n", bpx->ctx_fd);
+-	printf("\ttrans_fd=%d,\n", bpx->trans_fd);
++	printf("bpf_onf={\n");
++	printf("\topt=%d,\n", cfg->opt);
++	printf("\tctx_fd=%u,\n", cfg->bpx.ctx_fd);
++	printf("\ttrans_fd=%u,\n", cfg->bpx.trans_fd);
+ 	printf("}\n");
+ 
+ #if 0
+@@ -1048,9 +1059,12 @@ acx_init(void)
+ 
+ 	rte_acl_dump(config.acx);
+ 
+-	if (ret == 0 && config.use_bpf == true) {
+-		ret = rte_acl_bpf_init(&config.bpx, config.acx);
+-		print_acl_bpf_ctx(&config.bpx);
++	if (ret == 0) {
++		if (config.bpf.opt == BPF_TEST)
++			ret = rte_acl_bpf_init(&config.bpf.bpx, config.acx);
++		else if (config.bpf.opt == BPF_FILL)
++			ret = rte_acl_bpf_fill(&config.bpf.bpx, config.acx);
++		print_bpf_conf(&config.bpf);
+ 	}
+ 
+ 	if (ret != 0)
+@@ -1075,15 +1089,16 @@ search_ip5tuples_once(uint32_t categories, uint32_t step, const char *alg)
+ 			v += config.trace_sz;
+ 		}
+ 
+-		if (config.use_bpf == false)
++		if (config.bpf.opt == BPF_DISABLED)
+ 			ret = rte_acl_classify(config.acx, data, results,
+ 				n, categories);
+-		else {
++		else if (config.bpf.opt == BPF_TEST) {
+ 			ret = 0;
+ 			for (j = 0; j != n && ret == 0; j++)
+-				ret = rte_acl_bpf_classify(&config.bpx, data[j],
+-					config.trace_sz, results + j);
+-		}
++				ret = rte_acl_bpf_classify(&config.bpf.bpx,
++					data[j], config.trace_sz, results + j);
++		} else
++			ret = 0;
+ 
+ 		if (ret != 0)
+ 			rte_exit(ret, "classify for ipv%c_5tuples returns %d\n",
+@@ -1167,6 +1182,34 @@ get_alg_opt(const char *opt, const char *name)
+ 		opt, name);
+ }
+ 
++static int
++get_bpf_ids(struct bpf_conf *bpf, const char *opt)
++{
++	bpf->opt = BPF_FILL;
++	GET_CB_FIELD(opt, bpf->bpx.ctx_fd, 0, UINT32_MAX, ':');
++	GET_CB_FIELD(opt, bpf->bpx.trans_fd, 0, UINT32_MAX, 0);
++	return 0;
++}
++
++static void
++get_bpf_opt(struct bpf_conf *bpf, const char *opt, const char *name)
++{
++	int32_t rc;
++
++	memset(bpf, 0, sizeof(*bpf));
++
++	rc = -EINVAL;
++	if (strcmp(opt, "test") == 0) {
++		bpf->opt = BPF_TEST;
++		rc = 0;
++	} else {
++		rc = get_bpf_ids(bpf, opt);
++	}
++	if (rc != 0)
++		rte_exit(rc, "invalid value: \"%s\" for option: %s\n",
++			opt, name);
++}
++
+ static void
+ get_ipv6_opt(const char *opt, const char *name)
+ {
+@@ -1240,7 +1283,7 @@ print_usage(const char *prgname)
+ 		"[--" OPT_VERBOSE "=<verbose level>]\n"
+ 		"[--" OPT_SEARCH_ALG "=%s]\n"
+ 		"[--" OPT_IPV6 "(=4B | 8B) <IPv6 rules and trace files>]\n"
+-		"[--" OPT_BPF "<enable bpf classify>]\n",
++		"[--" OPT_BPF "(=test | <ictx_map_id:trans_map_id>)\n",
+ 		prgname, RTE_ACL_RESULTS_MULTIPLIER,
+ 		(uint32_t)RTE_ACL_MAX_CATEGORIES,
+ 		buf);
+@@ -1263,7 +1306,7 @@ dump_config(FILE *f)
+ 	fprintf(f, "%s:%u(%s)\n", OPT_SEARCH_ALG, config.alg.alg,
+ 		config.alg.name);
+ 	fprintf(f, "%s:%u\n", OPT_IPV6, config.ipv6);
+-	fprintf(f, "%s:%d\n", OPT_BPF, config.use_bpf);
++	fprintf(f, "%s:%u\n", OPT_BPF, config.bpf.opt);
+ }
+ 
+ static void
+@@ -1293,7 +1336,7 @@ get_input_opts(int argc, char **argv)
+ 		{OPT_VERBOSE, 1, 0, 0},
+ 		{OPT_SEARCH_ALG, 1, 0, 0},
+ 		{OPT_IPV6, 2, 0, 0},
+-		{OPT_BPF, 0, 0, 0},
++		{OPT_BPF, 1, 0, 0},
+ 		{NULL, 0, 0, 0}
+ 	};
+ 
+@@ -1346,7 +1389,7 @@ get_input_opts(int argc, char **argv)
+ 			if (optarg != NULL)
+ 				get_ipv6_opt(optarg, lgopts[opt_idx].name);
+ 		} else if (strcmp(lgopts[opt_idx].name, OPT_BPF) == 0) {
+-			config.use_bpf = true;
++			get_bpf_opt(&config.bpf, optarg, lgopts[opt_idx].name);
+ 		}
+ 	}
+ 	config.trace_sz = config.ipv6 ? sizeof(struct ipv6_5tuple) :
+@@ -1385,8 +1428,8 @@ main(int argc, char **argv)
+ 
+ 	rte_eal_mp_wait_lcore();
+ 
+-	if (config.use_bpf)
+-		rte_acl_bpf_fini(&config.bpx);
++	if (config.bpf.opt == BPF_TEST)
++		rte_acl_bpf_fini(&config.bpf.bpx);
+ 	rte_acl_free(config.acx);
+ 	return 0;
+ }
+diff --git a/app/test-acl/xdp_acl3.c b/app/test-acl/xdp_acl3.c
+new file mode 100644
+index 0000000000..d6b50caf61
+--- /dev/null
++++ b/app/test-acl/xdp_acl3.c
+@@ -0,0 +1,289 @@
++#include <linux/bpf.h>
++#include <bpf/bpf_helpers.h>
++#include <linux/if_ether.h>
++#include <arpa/inet.h>
++#include <linux/ip.h>
++#include <linux/ipv6.h>
++#include <linux/udp.h>
++#include <linux/tcp.h>
++
++#include <limits.h>
++#include <stdint.h>
++#include "acl_bpf.h"
++
++/*
++ * !!! copy of all defines - to remove
++ */
++
++/** Mask value of type "tp" for the first "ln" bit set. */
++#define RTE_LEN2MASK(ln, tp)    \
++	((tp)((uint64_t)-1 >> (sizeof(uint64_t) * CHAR_BIT - (ln))))
++
++enum {
++        RTE_ACL_TYPE_SHIFT = 29,
++        RTE_ACL_MAX_INDEX = RTE_LEN2MASK(RTE_ACL_TYPE_SHIFT, uint32_t),
++        RTE_ACL_MAX_PRIORITY = RTE_ACL_MAX_INDEX,
++        RTE_ACL_MIN_PRIORITY = 1,
++};
++
++#define RTE_ACL_NODE_DFA	(0 << RTE_ACL_TYPE_SHIFT)
++#define RTE_ACL_NODE_SINGLE	(1U << RTE_ACL_TYPE_SHIFT)
++#define RTE_ACL_NODE_QRANGE	(3U << RTE_ACL_TYPE_SHIFT)
++#define RTE_ACL_NODE_MATCH	(4U << RTE_ACL_TYPE_SHIFT)
++#define RTE_ACL_NODE_TYPE	(7U << RTE_ACL_TYPE_SHIFT)
++#define RTE_ACL_NODE_UNDEFINED	UINT32_MAX
++
++#define RTE_ACL_QUAD_MAX	5
++#define RTE_ACL_QUAD_SIZE	4
++#define RTE_ACL_QUAD_SINGLE	UINT64_C(0x7f7f7f7f00000000)
++
++#define RTE_ACL_SINGLE_TRIE_SIZE	2000
++
++#define RTE_ACL_DFA_MAX		UINT8_MAX
++#define RTE_ACL_DFA_SIZE	(UINT8_MAX + 1)
++
++#define RTE_ACL_DFA_GR64_SIZE	64
++#define RTE_ACL_DFA_GR64_NUM	(RTE_ACL_DFA_SIZE / RTE_ACL_DFA_GR64_SIZE)
++#define RTE_ACL_DFA_GR64_BIT	\
++	(CHAR_BIT * sizeof(uint32_t) / RTE_ACL_DFA_GR64_NUM)
++
++#define RTE_ACL_NODE_INDEX	((uint32_t)~RTE_ACL_NODE_TYPE)
++
++#define SCALAR_QRANGE_MULT	0x01010101
++#define SCALAR_QRANGE_MASK	0x7f7f7f7f
++#define SCALAR_QRANGE_MIN	0x80808080
++
++struct {
++        __uint(type, BPF_MAP_TYPE_ARRAY);
++        __type(key, uint32_t);
++        __type(value, struct rte_acl_bpf_ctx);
++        __uint(max_entries, 1);
++} acl_ctx SEC(".maps");
++
++struct {
++        __uint(type, BPF_MAP_TYPE_ARRAY);
++        __type(key, uint32_t);
++        __type(value, uint64_t);
++        __uint(max_entries, 0x400000);
++} acl_trans SEC(".maps");
++
++struct packet_field {
++	uint8_t proto;
++	uint32_t src_ip;
++	uint32_t dst_ip;
++	uint16_t src_port;
++	uint16_t dst_port;
++};
++
++union packet_data {
++	struct packet_field data;
++	uint8_t raw[sizeof(struct packet_field)];
++};
++
++const uint32_t data_ofs[] = {
++	offsetof(struct packet_field, proto),
++	offsetof(struct packet_field, src_ip),
++	offsetof(struct packet_field, src_ip) + 1,
++	offsetof(struct packet_field, src_ip) + 2,
++	offsetof(struct packet_field, src_ip) + 3,
++	offsetof(struct packet_field, dst_ip),
++	offsetof(struct packet_field, dst_ip) + 1,
++	offsetof(struct packet_field, dst_ip) + 2,
++	offsetof(struct packet_field, dst_ip) + 3,
++	offsetof(struct packet_field, src_port),
++	offsetof(struct packet_field, src_port) + 1,
++	offsetof(struct packet_field, dst_port),
++	offsetof(struct packet_field, dst_port) + 1,
++};
++
++#define DIM(a)	(sizeof(a) / sizeof(a[0]))
++
++static void *
++resolve_match(uint32_t match_index, uint64_t trans)
++{
++	uint32_t idx;
++
++	trans &= RTE_ACL_NODE_INDEX;
++	idx = match_index + trans;
++
++	/* get match record */
++	return bpf_map_lookup_elem(&acl_trans, &idx);
++}
++
++static inline uint32_t
++scan_forward(uint32_t input, uint32_t max)
++{
++	return (input == 0) ? max : __builtin_ctz(input);
++}
++
++static uint32_t
++resolve_next_index(uint64_t transition, uint8_t input)
++{
++	uint32_t addr, index, ranges, x, a, b, c;
++
++	/* break transition into component parts */
++	ranges = transition >> (sizeof(index) * CHAR_BIT);
++	index = transition & ~RTE_ACL_NODE_INDEX;
++	addr = transition ^ index;
++
++	if (index != RTE_ACL_NODE_DFA) {
++		/* calc address for a QRANGE/SINGLE node */
++		c = (uint32_t)input * SCALAR_QRANGE_MULT;
++		a = ranges | SCALAR_QRANGE_MIN;
++		a -= (c & SCALAR_QRANGE_MASK);
++		b = c & SCALAR_QRANGE_MIN;
++		a &= SCALAR_QRANGE_MIN;
++		a ^= (ranges ^ b) & (a ^ b);
++		x = scan_forward(a, 32) >> 3;
++	} else {
++		/* calc address for a DFA node */
++		x = ranges >> (input /
++			RTE_ACL_DFA_GR64_SIZE * RTE_ACL_DFA_GR64_BIT);
++		x &= UINT8_MAX;
++		x = input - x;
++	}
++
++	addr += x;
++	return addr;
++}
++
++static inline int
++one_step_trans(uint32_t match_index, uint8_t input, uint64_t trans,
++	uint64_t *next) 
++{
++	uint32_t idx;
++	const uint64_t *val;
++
++	idx = resolve_next_index(trans, input);
++	val = bpf_map_lookup_elem(&acl_trans, &idx);
++	if (val == NULL)
++		return XDP_PASS;
++	trans = *val;
++	/* if match is found */
++	if ((trans & RTE_ACL_NODE_MATCH) != 0) {
++		val = resolve_match(match_index, trans);
++		if (val == NULL)
++			return XDP_PASS;
++		//bpf_printk("%s:%d *val=%#lx\n", __func__, __LINE__, *val);
++		return (*val == 0) ? XDP_PASS : XDP_DROP;
++	}
++	*next = trans;
++	return XDP_ABORTED;
++}
++
++
++SEC("xdp_prog")
++int xdp_acl_prog1(struct xdp_md *ctx)
++{
++	void *data_end;
++	void *data;
++	int32_t rc;
++	uint32_t i, idx, input, iphlen, match_index;
++	uint64_t trans;
++	const uint64_t *val;
++	struct ethhdr *eth;
++	struct iphdr *iph;
++	struct udphdr *udph;
++	union packet_data pd;
++	const struct rte_acl_bpf_ctx *bcx;
++
++	data_end = (void *)(long)ctx->data_end;
++	data = (void *)(long)ctx->data;
++
++	eth = data;
++	if (data + sizeof(*eth) > data_end)
++        	return XDP_DROP;
++
++	if (eth->h_proto != htons(ETH_P_IP))
++		return XDP_PASS;
++
++	iph = (struct iphdr *)(eth + 1);
++	if ((void *)(iph + 1) > data_end)
++		return XDP_DROP;
++
++	pd.data.proto = iph->protocol;
++	pd.data.src_ip = iph->saddr;
++	pd.data.dst_ip = iph->daddr;
++
++	iphlen = iph->ihl * sizeof(uint32_t);
++	udph = (struct udphdr *)((uint8_t *)iph + iphlen);
++
++	if((void *)(udph + 1) > data_end)
++		return XDP_PASS;
++
++	pd.data.src_port = udph->source;
++	pd.data.dst_port = udph->dest;
++
++	i = 0;
++	bcx = bpf_map_lookup_elem(&acl_ctx, &i);
++	if (bcx == NULL)
++		return XDP_PASS;
++
++	match_index = bcx->match_index;
++
++	input = pd.data.proto;
++	idx = bcx->trie[0].root_index + input;
++	val = bpf_map_lookup_elem(&acl_trans, &idx);
++	if (val == NULL)
++		return XDP_PASS;
++	trans = *val;
++	/* if match is found */
++	if ((trans & RTE_ACL_NODE_MATCH) != 0) {
++		val = resolve_match(match_index, trans);
++		if (val == NULL)
++			return XDP_PASS;
++		return XDP_DROP;
++	}
++
++	rc = one_step_trans(match_index, pd.raw[4], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[5], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[6], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[7], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[8], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[9], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[10], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[11], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[12], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[13], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[14], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	rc = one_step_trans(match_index, pd.raw[15], trans, &trans); 
++	if (rc != XDP_ABORTED)
++		return rc;
++
++	return XDP_PASS;
++}
++
++char _license[] SEC("license") = "GPL";
+diff --git a/lib/acl/acl_bpf.c b/lib/acl/acl_bpf.c
+index 43bf5e8b19..4d262f7e43 100644
+--- a/lib/acl/acl_bpf.c
++++ b/lib/acl/acl_bpf.c
+@@ -48,14 +48,68 @@ fill_bpf_ctx(struct rte_acl_bpf_ctx *btx, const struct rte_acl_ctx *ctx)
+ 	}
+ }
+ 
+-int
+-rte_acl_bpf_init(struct rte_acl_bpf *bpx, const struct rte_acl_ctx *ctx)
++static int
++fill_ctx_map(const struct rte_acl_bpf *bpx,  const struct rte_acl_ctx *ctx)
+ {
+-	uint32_t i, j, k;
+ 	int32_t rc;
++	uint32_t i;
++	struct rte_acl_bpf_ctx btx;
++
++	fill_bpf_ctx(&btx, ctx);
++
++	i = 0;
++	rc = bpf_map_update_elem(bpx->ctx_fd, &i, &btx, BPF_ANY);
++	if (rc != 0)
++		printf("%s:%d  "
++			"bpf_map_update_elem(fd=%d, key=%u, val=%p"
++			" failed, rc=%d, errno=%d\n",
++			__func__, __LINE__,
++			bpx->ctx_fd, i, &btx, rc, errno);
++	return rc;
++}
++
++static int
++fill_trans_map(const struct rte_acl_bpf *bpx,  const struct rte_acl_ctx *ctx)
++{
++	int32_t rc;
++	uint32_t i, j, k;
+ 	struct rte_acl_bpf_ctx btx;
+ 	union rte_acl_bpf_match bpf_match;
+ 	const struct rte_acl_match_results *match;
++
++	fill_bpf_ctx(&btx, ctx);
++
++	rc = 0;
++	for (i = 0; i != btx.match_index && rc == 0; i++) {
++		rc = bpf_map_update_elem(bpx->trans_fd, &i,
++				ctx->trans_table + i, BPF_ANY);
++	}
++
++	match = ((const struct rte_acl_match_results *)(ctx->trans_table + i));
++	for(j = 0; j != btx.num_matches && rc == 0; j++) {
++		k = i + j;
++		bpf_match.result = match[j].results[0];
++		bpf_match.priority = match[j].priority[0];
++		rc = bpf_map_update_elem(bpx->trans_fd, &k, &bpf_match.raw,
++			BPF_ANY);
++	}
++
++	if (rc != 0)
++		printf("%s:%d  "
++			"bpf_map_update_elem(fd=%d, key=%u, val=%" PRIx64
++			" failed, rc=%d, errno=%d\n",
++			__func__, __LINE__,
++			bpx->trans_fd, i, ctx->trans_table[i],
++			rc, errno);
++
++	return rc;
++}
++
++int
++rte_acl_bpf_init(struct rte_acl_bpf *bpx, const struct rte_acl_ctx *ctx)
++{
++	int32_t rc;
++	struct rte_acl_bpf_ctx btx;
+ 	char buf[0x100];
+ 
+ 	if (bpx == NULL || ctx == NULL)
+@@ -78,20 +132,12 @@ rte_acl_bpf_init(struct rte_acl_bpf *bpx, const struct rte_acl_ctx *ctx)
+ 	}
+ 
+ 	/* fill CTX map */
+-	i = 0;
+-	rc = bpf_map_update_elem(bpx->ctx_fd, &i, &btx, BPF_ANY);
++	rc = fill_ctx_map(bpx, ctx);
+ 	if (rc != 0) {
+-		printf("%s:%d  "
+-			"bpf_map_update_elem(fd=%d, key=%u, val=%p"
+-			" failed, rc=%d, errno=%d\n",
+-			__func__, __LINE__,
+-			bpx->ctx_fd, i, &btx, rc, errno);
+ 		rte_acl_bpf_fini(bpx);
+ 		return rc;
+ 	}
+ 
+-	/* create TRANS map */
+-	snprintf(buf, sizeof(buf), "%s_trans", ctx->name);
+ 	bpx->trans_fd = bpf_map_create(BPF_MAP_TYPE_ARRAY, buf,
+ 		sizeof(uint32_t), sizeof(uint64_t), btx.num_trans, NULL);
+ 	rc = (bpx->trans_fd < 0) ? -errno : 0;
+@@ -104,27 +150,8 @@ rte_acl_bpf_init(struct rte_acl_bpf *bpx, const struct rte_acl_ctx *ctx)
+ 	}
+ 
+ 	/* fill TRANS map */
+-	for (i = 0; i != btx.match_index && rc == 0; i++) {
+-		rc = bpf_map_update_elem(bpx->trans_fd, &i,
+-				ctx->trans_table + i, BPF_ANY);
+-	}
+-
+-	match = ((const struct rte_acl_match_results *)(ctx->trans_table + i));
+-	for(j = 0; j != btx.num_matches && rc == 0; j++) {
+-		k = i + j;
+-		bpf_match.result = match[j].results[0];
+-		bpf_match.priority = match[j].priority[0];
+-		rc = bpf_map_update_elem(bpx->trans_fd, &k, &bpf_match.raw,
+-			BPF_ANY);
+-	}
+-
++	rc = fill_trans_map(bpx, ctx);
+ 	if (rc != 0) {
+-		printf("%s:%d  "
+-			"bpf_map_update_elem(fd=%d, key=%u, val=%" PRIx64
+-			" failed, rc=%d, errno=%d\n",
+-			__func__, __LINE__,
+-			bpx->trans_fd, i, ctx->trans_table[i],
+-			rc, errno);
+ 		rte_acl_bpf_fini(bpx);
+ 		return rc;
+ 	}
+@@ -132,6 +159,38 @@ rte_acl_bpf_init(struct rte_acl_bpf *bpx, const struct rte_acl_ctx *ctx)
+ 	return 0;
+ }
+ 
++int
++rte_acl_bpf_fill(const struct rte_acl_bpf *bpid, const struct rte_acl_ctx *ctx)
++{
++	int32_t rc;
++	struct rte_acl_bpf bpx;
++
++	acl_bpf_reset(&bpx);
++
++	bpx.ctx_fd = bpf_map_get_fd_by_id(bpid->ctx_fd);
++	rc = (bpx.ctx_fd < 0) ? -errno : 0;
++	printf("%s:%d  "
++		"bpf_map_get_fd(=\"%u\") returns %d, errno=%d\n",
++		__func__, __LINE__, bpid->ctx_fd,  bpx.ctx_fd, rc);
++
++	if (rc == 0) {
++		bpx.trans_fd = bpf_map_get_fd_by_id(bpid->trans_fd);
++		rc = (bpx.ctx_fd < 0) ? -errno : 0;
++		printf("%s:%d  "
++			"bpf_map_get_fd(=\"%u\") returns %d, errno=%d\n",
++			__func__, __LINE__, bpid->trans_fd,  bpx.trans_fd, rc);
++	}
++
++	if (rc == 0)
++		rc = fill_ctx_map(&bpx, ctx);
++
++	if (rc == 0)
++		rc = fill_trans_map(&bpx, ctx);
++
++	rte_acl_bpf_fini(&bpx);
++	return rc;
++}
++
+ void
+ rte_acl_bpf_fini(struct rte_acl_bpf *bpx)
+ {
+diff --git a/lib/acl/rte_acl.h b/lib/acl/rte_acl.h
+index ec6a499364..e4a01a9a21 100644
+--- a/lib/acl/rte_acl.h
++++ b/lib/acl/rte_acl.h
+@@ -373,6 +373,8 @@ struct rte_acl_bpf {
+ int
+ rte_acl_bpf_init(struct rte_acl_bpf *bpx, const struct rte_acl_ctx *ctx);
+ 
++int                                                                             rte_acl_bpf_fill(const struct rte_acl_bpf *bpid, const struct rte_acl_ctx *ctx);
++
+ void
+ rte_acl_bpf_fini(struct rte_acl_bpf *bpx);
+ 
+-- 
+2.43.0
+
