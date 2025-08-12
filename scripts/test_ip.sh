@@ -6,7 +6,7 @@ NUM=${2}
 
 
 #TEMP='_acl2_10k'
-if 
+#if 
 
 RSF=host/run${RSF}
 #remove all files in it
