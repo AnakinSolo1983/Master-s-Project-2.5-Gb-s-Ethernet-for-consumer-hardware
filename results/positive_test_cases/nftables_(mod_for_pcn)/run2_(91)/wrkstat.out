@@ -1,0 +1,8 @@
+ip/run2/wrk.out1:Requests/sec:  86211.08
+ip/run2/wrk.out2:Requests/sec:  86951.87
+ip/run2/wrk.out3:Requests/sec:  86114.85
+ip/run2/wrk.out4:Requests/sec:  86421.59
+86211.08 86211.080000
+86951.87 173162.950000
+86114.85 259277.800000
+86421.59 345699.390000
