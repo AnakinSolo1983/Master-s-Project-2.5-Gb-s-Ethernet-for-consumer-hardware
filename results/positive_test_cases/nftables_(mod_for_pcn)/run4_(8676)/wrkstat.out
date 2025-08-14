@@ -1,0 +1,8 @@
+ip/run3/wrk.out1:Requests/sec:  77740.27
+ip/run3/wrk.out2:Requests/sec:  77395.39
+ip/run3/wrk.out3:Requests/sec:  77143.68
+ip/run3/wrk.out4:Requests/sec:  77211.70
+77740.27 77740.270000
+77395.39 155135.660000
+77143.68 232279.340000
+77211.70 309491.040000
