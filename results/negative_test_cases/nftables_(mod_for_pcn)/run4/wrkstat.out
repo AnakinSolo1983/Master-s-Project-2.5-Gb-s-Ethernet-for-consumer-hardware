@@ -1,0 +1,8 @@
+acl_ip/run4/wrk.out1:Requests/sec:  20098.07
+acl_ip/run4/wrk.out2:Requests/sec:  20107.04
+acl_ip/run4/wrk.out3:Requests/sec:  20106.57
+acl_ip/run4/wrk.out4:Requests/sec:  20053.89
+20098.07 20098.070000
+20107.04 40205.110000
+20106.57 60311.680000
+20053.89 80365.570000
