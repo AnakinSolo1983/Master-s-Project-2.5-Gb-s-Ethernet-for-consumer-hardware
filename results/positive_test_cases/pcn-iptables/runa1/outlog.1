@@ -1,0 +1,227 @@
++ RSF=a1
++ TYP=xdp
++ NUM=1
++ '[' xdp == 0 ']'
++ '[' xdp == net ']'
++ '[' xdp == xdp ']'
++ RSF=re_s/xdp/runa1
++ rm -rf re_s/xdp/runa1/irqstat.out re_s/xdp/runa1/mpstat0.out re_s/xdp/runa1/nginxp.txt re_s/xdp/runa1/wrk.out1 re_s/xdp/runa1/wrk.out2 re_s/xdp/runa1/wrk.out3 re_s/xdp/runa1/wrk.out4
++ mkdir -p re_s/xdp/runa1
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x xdp.sh 1'
+[sudo] password for olegvm: 
++ NUM=1
++ cd polycube
++ pwd
+/home/olegvm/polycube
++ sudo polycubed -d
+[2025-07-01 18:49:45.389] [polycubed] [info] loading configuration from /etc/polycube/polycubed.conf
+[2025-07-01 18:49:45.390] [polycubed] [info] configuration parameters: 
+[2025-07-01 18:49:45.390] [polycubed] [info]  loglevel: info
+[2025-07-01 18:49:45.390] [polycubed] [info]  daemon: true
+[2025-07-01 18:49:45.390] [polycubed] [info]  pidfile: /var/run/polycube.pid
+[2025-07-01 18:49:45.390] [polycubed] [info]  port: 9000
+[2025-07-01 18:49:45.390] [polycubed] [info]  addr: localhost
+[2025-07-01 18:49:45.390] [polycubed] [info]  logfile: /var/log/polycube/polycubed.log
+[2025-07-01 18:49:45.390] [polycubed] [info]  cubes-dump-file: /etc/polycube/cubes.yaml
+[2025-07-01 18:49:45.390] [polycubed] [info]  cubes-dump-clean-init: false
+[2025-07-01 18:49:45.390] [polycubed] [info]  cubes-dump-enable: false
+[2025-07-01 18:49:45.390] [polycubed] [info] polycubed starting...
+[2025-07-01 18:49:45.390] [polycubed] [info] version v0.9.0+ [git: (branch/commit): master/a143e3c0]
+[2025-07-01 18:49:45.390] [polycubed] [info] running as daemon
++ pwd
+/home/olegvm/polycube
++ pcn-iptables-init-xdp
+starting pcn-iptables ...
++ pwd
+/home/olegvm/polycube
++ /bin/bash -x testr1.sh
++ python3 ../p1_xdp.py
++ read line
++ pcn-iptables -A INPUT -s 231.176.7.128/32 -d 204.162.1.174/32 -p tcp --sport 0:65535 --dport 53:53 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 204.162.17.238/32 -d 204.187.240.113/32 -p tcp --sport 0:65535 --dport 25:25 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 44.111.46.48/32 -d 44.111.60.226/32 -p tcp --sport 0:65535 --dport 5730:5730 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 231.176.26.179/32 -d 44.7.244.217/32 -p tcp --sport 0:65535 --dport 0:65535 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 231.182.183.0/24 -d 231.151.145.137/32 -p tcp --sport 0:65535 --dport 0:65535 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 231.179.0.0/16 -d 204.162.189.91/32 -p tcp --sport 0:65535 --dport 0:65535 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 231.182.182.84/32 -d 38.192.0.0/12 -p tcp --sport 0:65535 --dport 0:65535 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 231.182.182.177/32 -d 174.160.0.0/12 -p tcp --sport 0:65535 --dport 0:65535 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 231.182.183.0/24 -d 38.208.0.0/12 -p tcp --sport 0:65535 --dport 0:65535 -j DROP
+
++ read line
++ pcn-iptables -A INPUT -s 231.176.239.0/24 -d 231.176.0.0/12 -p tcp --sport 0:65535 --dport 0:65535 -j DROP
+
++ read line
++ pcn-iptables -L INPUT
+Connection to 192.168.122.249 closed.
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x servirq.sh re_s/xdp/runa1'
+[sudo] password for olegvm: 
++ RSF=re_s/xdp/runa1
++ SERVER=ip
++ netns exec ns1 sudo lshw -c network -businfo
+servirq.sh: line 4: netns: command not found
++ rm -rf 're_s/xdp/runa1/*'
++ mkdir -p re_s/xdp/runa1
++ echo 'ns1 Before: '
++ cat /proc/interrupts
++ grep enp7s0-TxRx
++ IRQS=($(cat /proc/interrupts | grep enp7s0-TxRx | awk '{print $1}' | tr -d :))
+++ cat /proc/interrupts
+++ awk '{print $1}'
+++ tr -d :
+++ grep enp7s0-TxRx
++ i=0
++ IRQS=($(cat /proc/interrupts | grep enp7s0-TxRx | awk '{print $1}' | tr -d :))
+++ cat /proc/interrupts
+++ grep enp7s0-TxRx
+++ tr -d :
+++ awk '{print $1}'
++ i=0
++ echo 'ns1 After: '
+servirq.sh: line 33: /re_s/xdp/runa1/sirqstat.out: No such file or directory
++ cat /proc/interrupts
++ grep enp7s0-TxRx
++ ls -l re_s/xdp/runa1/sirqstat.out
+-rw-r--r-- 1 root root 821 Jul  1 18:50 re_s/xdp/runa1/sirqstat.out
++ chmod 644 re_s/xdp/runa1/sirqstat.out
++ ls -l re_s/xdp/runa1/sirqstat.out
+-rw-r--r-- 1 root root 821 Jul  1 18:50 re_s/xdp/runa1/sirqstat.out
+Connection to 192.168.122.249 closed.
++ scp olegvm@192.168.122.249:/home/olegvm/re_s/xdp/runa1/sirqstat.out /home/oleg-ananiev/re_s/xdp/runa1
++ /bin/bash -x testirq.sh re_s/xdp/runa1
++ RSF=re_s/xdp/runa1
++ echo 'ns2 Before: '
++ cat /proc/interrupts
++ grep enp88s0-TxRx
++ IRQS=($(cat /proc/interrupts | grep enp88s0-TxRx | awk '{print $1}' | tr -d :))
+++ cat /proc/interrupts
+++ grep enp88s0-TxRx
+++ awk '{print $1}'
+++ tr -d :
++ i=0
++ IRQS=($(cat /proc/interrupts | grep enp88s0-TxRx | awk '{print $1}' | tr -d :))
+++ cat /proc/interrupts
+++ grep enp88s0-TxRx
+++ awk '{print $1}'
+++ tr -d :
++ i=0
++ /bin/bash -x testssh.sh 20 hello 12 1000 re_s/xdp/runa1
++ TMT=20
++ FL=hello
++ THR=12
++ CN=1000
++ RSF=re_s/xdp/runa1
++ let MPT=TMT/10
++ PIDS=()
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x nginx_start.sh'
+[sudo] password for olegvm: 
++ pwd
+/home/olegvm
++ NGINX_PID=3281
++ echo 'Nginx PID: 3281'
+Nginx PID: 3281
++ echo 3281
++ sleep 5
++ ip netns exec ns1 nginx -c /home/olegvm/nginx.conf/nginx-cpus-cores-lp4.conf
++ ps -ef
++ grep nginx
+root         704       1  0 18:38 ?        00:00:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data     706     704  0 18:38 ?        00:00:00 nginx: worker process
+www-data     707     704  0 18:38 ?        00:00:00 nginx: worker process
+www-data     709     704  0 18:38 ?        00:00:00 nginx: worker process
+www-data     710     704  0 18:38 ?        00:00:00 nginx: worker process
+root        3279    3278  0 18:50 pts/1    00:00:00 sudo /bin/bash -x nginx_start.sh
+root        3280    3279  0 18:50 pts/1    00:00:00 /bin/bash -x nginx_start.sh
+root        3281    3280  0 18:50 pts/1    00:00:00 nginx: master process nginx -c /home/olegvm/nginx.conf/nginx-cpus-cores-lp4.conf
+root        3283    3281  0 18:50 pts/1    00:00:00 nginx: worker process
+root        3284    3281  0 18:50 pts/1    00:00:00 nginx: worker process
+root        3285    3281  0 18:50 pts/1    00:00:00 nginx: worker process
+root        3286    3281  0 18:50 pts/1    00:00:00 nginx: worker process
+root        3291    3280  0 18:50 pts/1    00:00:00 grep nginx
+Connection to 192.168.122.249 closed.
++ scp olegvm@192.168.122.249:/home/olegvm/nginxp.txt /home/oleg-ananiev/re_s/xdp/runa1/nginxp.txt
++ NGINXP=3281
++ PIDS+=("${!}")
++ ip netns exec ns2 wrk -t12 -c1000 -d20s --latency http://192.168.11.1:6000/hello
++ PIDS+=("${!}")
++ PIDS+=("${!}")
++ ip netns exec ns2 wrk -t12 -c1000 -d20s --latency http://192.168.11.1:7000/hello
++ ip netns exec ns2 wrk -t12 -c1000 -d20s --latency http://192.168.11.1:6001/hello
++ PIDS+=("${!}")
++ ip netns exec ns2 wrk -t12 -c1000 -d20s --latency http://192.168.11.1:7001/hello
++ PIDS+=("${!}")
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x perf_get.sh re_s/xdp/runa1'
++ mpstat -P ALL 10 2
+[sudo] password for olegvm: 
++ RSF=re_s/xdp/runa1
++ NGINXP=3281
++ sleep 3
++ perf record -C 0-3 -o re_s/xdp/runa1/perf.data sleep 10
+Connection to 192.168.122.249 closed.
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x perfcp.sh re_s/xdp/runa1'
+[sudo] password for olegvm: 
++ RSF=re_s/xdp/runa1
++ ls -l /home/olegvm/re_s/xdp/runa1/perf.data
+-rw------- 1 root root 10083247 Jul  1 18:50 /home/olegvm/re_s/xdp/runa1/perf.data
++ chmod 644 /home/olegvm/re_s/xdp/runa1/perf.data
++ ls -l /home/olegvm/re_s/xdp/runa1/perf.data
+-rw-r--r-- 1 root root 10083247 Jul  1 18:50 /home/olegvm/re_s/xdp/runa1/perf.data
+Connection to 192.168.122.249 closed.
++ scp olegvm@192.168.122.249:/home/olegvm/re_s/xdp/runa1/perf.data /home/oleg-ananiev/re_s/xdp/runa1
++ wait 4736 4737 4738 4739 4740
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x nginx_kill.sh'
+[sudo] password for olegvm: 
++ NGINXP=3281
++ kill 3281
++ ps -ef
++ grep nginx
+root         704       1  0 18:38 ?        00:00:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data     706     704  0 18:38 ?        00:00:00 nginx: worker process
+www-data     707     704  0 18:38 ?        00:00:00 nginx: worker process
+www-data     709     704  0 18:38 ?        00:00:00 nginx: worker process
+www-data     710     704  0 18:38 ?        00:00:00 nginx: worker process
+root        3602    3601  0 18:51 pts/2    00:00:00 sudo /bin/bash -x nginx_kill.sh
+root        3603    3602  0 18:51 pts/2    00:00:00 /bin/bash -x nginx_kill.sh
+root        3606    3603  0 18:51 pts/2    00:00:00 grep nginx
+Connection to 192.168.122.249 closed.
++ grep Requests/sec re_s/xdp/runa1/wrk.out1 re_s/xdp/runa1/wrk.out2 re_s/xdp/runa1/wrk.out3 re_s/xdp/runa1/wrk.out4
++ grep Requests/sec re_s/xdp/runa1/wrk.out1 re_s/xdp/runa1/wrk.out2 re_s/xdp/runa1/wrk.out3 re_s/xdp/runa1/wrk.out4
++ awk '{x=$2; sum+=x; printf("%s %f\n", $(2), sum);}'
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x irqaft.sh re_s/xdp/runa1'
+[sudo] password for olegvm: 
++ RSF=re_s/xdp/runa1
++ echo 'ns1 After: '
++ cat /proc/interrupts
++ grep enp7s0-TxRx
+Connection to 192.168.122.249 closed.
++ echo 'ns2 After: '
++ cat /proc/interrupts
++ grep enp88s0-TxRx
++ scp olegvm@192.168.122.249:/home/olegvm/re_s/xdp/runa1/sirqaft.out /home/oleg-ananiev/re_s/xdp/runa1
++ '[' xdp == net ']'
++ '[' xdp == xdp ']'
++ ssh -t olegvm@192.168.122.249 'sudo /bin/bash -x pcn-iptables-clean'
+[sudo] password for olegvm: 
++ polycubectl iptables del pcn-iptables
+++ echo 0
++ ret=0
++ '[' 0 -ne 0 ']'
++ echo 'pcn-iptables closed'
+pcn-iptables closed
+Connection to 192.168.122.249 closed.
++ scp olegvm@192.168.122.249:/home/olegvm/polycube/rules0_r1.1 /home/oleg-ananiev/re_s/xdp/runa1

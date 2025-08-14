@@ -1,0 +1,5 @@
+ns1 After: 
+ 55:     812984         38          0        154   PCI-MSI 3670017-edge      enp7s0-TxRx-0
+ 56:         10     403613     410188         52   PCI-MSI 3670018-edge      enp7s0-TxRx-1
+ 57:     102092     307666     394808        174   PCI-MSI 3670019-edge      enp7s0-TxRx-2
+ 58:        136          0         16     812746   PCI-MSI 3670020-edge      enp7s0-TxRx-3
