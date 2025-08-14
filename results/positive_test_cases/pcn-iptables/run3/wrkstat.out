@@ -1,0 +1,8 @@
+re_s/xdp/run3/wrk.out1:Requests/sec:  88493.42
+re_s/xdp/run3/wrk.out2:Requests/sec:  90502.11
+re_s/xdp/run3/wrk.out3:Requests/sec:  87966.87
+re_s/xdp/run3/wrk.out4:Requests/sec:  88183.66
+88493.42 88493.420000
+90502.11 178995.530000
+87966.87 266962.400000
+88183.66 355146.060000
