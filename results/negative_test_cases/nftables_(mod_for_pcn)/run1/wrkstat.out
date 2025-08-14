@@ -1,0 +1,8 @@
+acl_ip/run1/wrk.out1:Requests/sec:  86753.10
+acl_ip/run1/wrk.out2:Requests/sec:  87488.82
+acl_ip/run1/wrk.out3:Requests/sec:  85934.87
+acl_ip/run1/wrk.out4:Requests/sec:  86516.42
+86753.10 86753.100000
+87488.82 174241.920000
+85934.87 260176.790000
+86516.42 346693.210000
