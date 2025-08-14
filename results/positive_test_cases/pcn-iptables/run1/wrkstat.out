@@ -1,8 +1,0 @@
-re_s/xdp/run1/wrk.out1:Requests/sec:  97379.39
-re_s/xdp/run1/wrk.out2:Requests/sec:  98343.24
-re_s/xdp/run1/wrk.out3:Requests/sec:  97556.80
-re_s/xdp/run1/wrk.out4:Requests/sec:  98070.84
-97379.39 97379.390000
-98343.24 195722.630000
-97556.80 293279.430000
-98070.84 391350.270000
