@@ -1,0 +1,8 @@
+ip/run1/wrk.out1:Requests/sec:  86630.28
+ip/run1/wrk.out2:Requests/sec:  84881.32
+ip/run1/wrk.out3:Requests/sec:  85097.51
+ip/run1/wrk.out4:Requests/sec:  86235.00
+86630.28 86630.280000
+84881.32 171511.600000
+85097.51 256609.110000
+86235.00 342844.110000
