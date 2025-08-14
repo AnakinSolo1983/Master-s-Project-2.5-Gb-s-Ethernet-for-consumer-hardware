@@ -1,0 +1,8 @@
+ip/run4/wrk.out1:Requests/sec:  19856.25
+ip/run4/wrk.out2:Requests/sec:  19837.95
+ip/run4/wrk.out3:Requests/sec:  19855.42
+ip/run4/wrk.out4:Requests/sec:  19831.97
+19856.25 19856.250000
+19837.95 39694.200000
+19855.42 59549.620000
+19831.97 79381.590000
