@@ -1,0 +1,8 @@
+netflt/run37/wrk.out1:Requests/sec:   9271.20
+netflt/run37/wrk.out2:Requests/sec:   9254.38
+netflt/run37/wrk.out3:Requests/sec:   9239.62
+netflt/run37/wrk.out4:Requests/sec:   9250.26
+9271.20 9271.200000
+9254.38 18525.580000
+9239.62 27765.200000
+9250.26 37015.460000
