@@ -1,0 +1,14 @@
+Running 20s test @ http://192.168.11.1:7000/hello
+  12 threads and 1000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    65.87ms   99.32ms   2.00s    98.48%
+    Req/Sec     1.37k   426.61     8.41k    88.94%
+  Latency Distribution
+     50%   61.18ms
+     75%   64.31ms
+     90%   66.47ms
+     99%  459.93ms
+  317607 requests in 20.09s, 77.24MB read
+  Socket errors: connect 0, read 0, write 0, timeout 491
+Requests/sec:  15805.30
+Transfer/sec:      3.84MB
