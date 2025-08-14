@@ -1,0 +1,24 @@
+1: hash  flags 0x0
+	key 9B  value 1B  max_entries 500  memlock 46880B
+3: hash  flags 0x0
+	key 9B  value 1B  max_entries 500  memlock 46880B
+218: array  name acl_ctx  flags 0x0
+	key 4B  value 1360B  max_entries 1  memlock 1624B
+	btf_id 655
+219: array  name acl_trans  flags 0x0
+	key 4B  value 8B  max_entries 4194304  memlock 33554696B
+	btf_id 655
+220: array  name acl_rule  flags 0x0
+	key 4B  value 48B  max_entries 65536  memlock 3145992B
+	btf_id 655
+221: array  name .rodata.cst32  flags 0x80
+	key 4B  value 32B  max_entries 1  memlock 296B
+	frozen
+223: array  name libbpf_global  flags 0x0
+	key 4B  value 32B  max_entries 1  memlock 296B
+224: array  name pid_iter.rodata  flags 0x480
+	key 4B  value 4B  max_entries 1  memlock 8192B
+	btf_id 666  frozen
+	pids bpftool(45542)
+225: array  name libbpf_det_bind  flags 0x0
+	key 4B  value 32B  max_entries 1  memlock 296B
