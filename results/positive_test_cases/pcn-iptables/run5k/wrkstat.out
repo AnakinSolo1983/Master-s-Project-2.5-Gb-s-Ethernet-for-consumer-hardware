@@ -1,0 +1,8 @@
+re_s/xdp/run5k/wrk.out1:Requests/sec:  87925.00
+re_s/xdp/run5k/wrk.out2:Requests/sec:  88227.33
+re_s/xdp/run5k/wrk.out3:Requests/sec:  88369.11
+re_s/xdp/run5k/wrk.out4:Requests/sec:  88437.15
+87925.00 87925.000000
+88227.33 176152.330000
+88369.11 264521.440000
+88437.15 352958.590000
