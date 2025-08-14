@@ -1,0 +1,8 @@
+ip/run5/wrk.out1:Requests/sec:  39512.20
+ip/run5/wrk.out2:Requests/sec:  39427.56
+ip/run5/wrk.out3:Requests/sec:  39490.23
+ip/run5/wrk.out4:Requests/sec:  39555.97
+39512.20 39512.200000
+39427.56 78939.760000
+39490.23 118429.990000
+39555.97 157985.960000
