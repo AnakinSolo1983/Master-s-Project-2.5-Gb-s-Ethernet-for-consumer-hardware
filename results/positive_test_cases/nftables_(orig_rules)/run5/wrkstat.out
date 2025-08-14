@@ -1,0 +1,8 @@
+host/run5k/wrk.out1:Requests/sec:  18516.55
+host/run5k/wrk.out2:Requests/sec:  18489.95
+host/run5k/wrk.out3:Requests/sec:  18528.59
+host/run5k/wrk.out4:Requests/sec:  18535.00
+18516.55 18516.550000
+18489.95 37006.500000
+18528.59 55535.090000
+18535.00 74070.090000
