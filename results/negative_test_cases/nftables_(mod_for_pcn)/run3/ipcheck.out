@@ -1,0 +1,8 @@
+Chain INPUT (policy ACCEPT 35M packets, 3449M bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain OUTPUT (policy ACCEPT 34M packets, 11G bytes)
+ pkts bytes target     prot opt in     out     source               destination         
