@@ -1,0 +1,8 @@
+re_s/xdp/runx3/wrk.out1:Requests/sec:  87275.98
+re_s/xdp/runx3/wrk.out2:Requests/sec:  87426.36
+re_s/xdp/runx3/wrk.out3:Requests/sec:  87684.27
+re_s/xdp/runx3/wrk.out4:Requests/sec:  88023.67
+87275.98 87275.980000
+87426.36 174702.340000
+87684.27 262386.610000
+88023.67 350410.280000
