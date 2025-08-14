@@ -1,0 +1,8 @@
+re_s/pcap/run2/wrk.out1:Requests/sec:  79494.78
+re_s/pcap/run2/wrk.out2:Requests/sec:  78720.25
+re_s/pcap/run2/wrk.out3:Requests/sec:  78547.88
+re_s/pcap/run2/wrk.out4:Requests/sec:  78213.15
+79494.78 79494.780000
+78720.25 158215.030000
+78547.88 236762.910000
+78213.15 314976.060000
