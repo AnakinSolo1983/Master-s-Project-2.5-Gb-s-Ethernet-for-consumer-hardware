@@ -1,0 +1,8 @@
+host_op/run3/wrk.out1:Requests/sec:  53184.73
+host_op/run3/wrk.out2:Requests/sec:  52992.91
+host_op/run3/wrk.out3:Requests/sec:  53297.84
+host_op/run3/wrk.out4:Requests/sec:  53244.12
+53184.73 53184.730000
+52992.91 106177.640000
+53297.84 159475.480000
+53244.12 212719.600000
