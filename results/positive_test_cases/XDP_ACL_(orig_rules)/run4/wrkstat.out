@@ -1,0 +1,8 @@
+acl_n/run4/wrk.out1:Requests/sec:  83989.36
+acl_n/run4/wrk.out2:Requests/sec:  83805.32
+acl_n/run4/wrk.out3:Requests/sec:  84109.45
+acl_n/run4/wrk.out4:Requests/sec:  83882.96
+83989.36 83989.360000
+83805.32 167794.680000
+84109.45 251904.130000
+83882.96 335787.090000
