@@ -1,0 +1,8 @@
+re_s/xdp/runa2/wrk.out1:Requests/sec:  99338.20
+re_s/xdp/runa2/wrk.out2:Requests/sec:  98807.44
+re_s/xdp/runa2/wrk.out3:Requests/sec:  99080.67
+re_s/xdp/runa2/wrk.out4:Requests/sec: 100133.20
+99338.20 99338.200000
+98807.44 198145.640000
+99080.67 297226.310000
+100133.20 397359.510000
