@@ -1,0 +1,8 @@
+acl_pc/runb3/wrk.out1:Requests/sec:  85389.11
+acl_pc/runb3/wrk.out2:Requests/sec:  85499.78
+acl_pc/runb3/wrk.out3:Requests/sec:  85933.97
+acl_pc/runb3/wrk.out4:Requests/sec:  86442.73
+85389.11 85389.110000
+85499.78 170888.890000
+85933.97 256822.860000
+86442.73 343265.590000
