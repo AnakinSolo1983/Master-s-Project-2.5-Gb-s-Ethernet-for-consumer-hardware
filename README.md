@@ -73,7 +73,7 @@ For pcn-iptables, the scripts are tpcn_pc.sh and tpcn_pcap.sh, the script for ir
 
 ### XDP-ACL
 
-The **xdp-acl** directory contains sources and patch for XDP and POC. It also contains a ```get_build.sh``` script which is used to clone DPDK, applying the patch in **xdp-acl/patch** and build it. It then compiles the XDP program that will be used for XDP ACL tests.
+The **xdp-acl** directory contains sources and patch for XDP-ACL POC. It also contains a ```get_build.sh``` script which is used to clone DPDK, applying the patch in **xdp-acl/patch** and build it. It then compiles the XDP program that will be used for XDP ACL packet filtering.
 
 ## Additional
 
