@@ -1,6 +1,6 @@
 ## Scripts
 
-The directory "scripts" consists of Bash and python scripts that are used to perform tests on the network performance for various test cases such as using Netfilter (iptables/nftables), pcn-iptables (in a virtual machine), and XDP ACL. 
+The directory **scripts** consists of Bash and python scripts that are used to perform tests on the network performance for various test cases such as using Netfilter (iptables/nftables), pcn-iptables (in a virtual machine), and XDP ACL. 
 
 Each test consists of three Bash scripts; the first being used to load the rules into the table, the second is used to assign the CPU cores to network namespaces ns1 and nds2, acting as server and client respectively. The third script then performs the test itself, using nginx and wrk to simulate requests from 4 clients put the server under load. Python scripts are used to read the rules from the files and express them in the required format for the tables.
 
