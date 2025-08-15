@@ -1,3 +1,8 @@
+#----------
+
+# This is one of the Bash scripts used reads a configuration file containing network rules and generates corresponding iptables rules. The script processes each line of the file, extracts relevant information, and formats it into a command that can be executed in a Linux environment to manage network traffic. In this case, it accesses the 9785 rules from the fourth rule-set.
+
+#----------
 with open('dts/dep/test-acl-input/acl1v4_10k_rule', 'r') as file:
     for line in file:
         parts = line.strip().split('\t')
@@ -7,6 +12,5 @@ with open('dts/dep/test-acl-input/acl1v4_10k_rule', 'r') as file:
         dest_ports = parts[3].replace(' : ', ':')
         
         # Generate iptables rule
-        #rule = f"iptables -A INPUT -s {source} -d {dest} -p tcp --sport {source_ports} --dport {dest_ports} -j ACCEPT"
-        rule = f"-A INPUT -s {source} -d {dest} -p tcp --sport {source_ports} --dport {dest_ports} -j ACCEPT"
+        rule = f"-A INPUT -s {source} -d {dest} -p tcp --sport {source_ports} --dport {dest_ports} -j DROP"
         print(rule)
