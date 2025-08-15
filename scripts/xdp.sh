@@ -14,9 +14,8 @@ pwd
 polycubed -d
 pwd
 
-Initiate pcn-iptables
+#Initiate pcn-iptables:
 pcn-iptables-init-xdp
-pwd
 
 # Execute script that writes down the rules into pcn-iptables:
 /bin/bash -x testr${NUM}.sh
