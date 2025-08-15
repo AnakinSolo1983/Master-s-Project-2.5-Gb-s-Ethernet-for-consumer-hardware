@@ -1,7 +1,7 @@
 #! /bin/bash
 
-# to simplify user expirience with XDP-ACL POC this script aims
-# to automate clonig DPDK, applying the patch and building the binaries.
+# to simplify user experience with XDP-ACL POC this script aims
+# to automate cloning DPDK, applying the patch and building the binaries.
 
 git clone -v https://dpdk.org/git/dpdk dpdk-acl-bpf
 cd dpdk-acl-bpf
