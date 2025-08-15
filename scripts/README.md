@@ -9,7 +9,7 @@ There are two main test-cases, positive and negative. Positive involves simply u
 Positive test-case scripts are test_ip.sh, test_xdp.sh, test_pcn.sh, test_xdp_mod.sh, test_ip_mod.sh, with the first two are used for Netfilter and XDP ACL with original rules, while the other three use the modified rules. Scripts test_irq.sh and test_prf.sh assign irqs to the cores and perform the test itself respectively for Netfilter and XDP ACL.
 For pcn, there are separate scripts; tpcn_irq.sh and tpcn_pf.sh that access the virtual machine.
 
-Scripts irqaft.sh, netflt.sh, nginx_kill.sh, nginx_start.sh, nginx_vm_setup.sh, perfcp.sh, perf_get.sh, servirq.sh, and xdp.sh are scripts used for testing with pcn-iptables, in which a virtual machine acts as the server. This scripts must be stored within the virtual machine and executed using ssh command.
+Scripts irqaft.sh, netflt.sh, nginx_kill.sh, nginx_start.sh, nginx_vm_setup.sh, perfcp.sh, perf_get.sh, servirq.sh, and xdp.sh are scripts used for testing with pcn-iptables, in which a virtual machine acts as the server. This scripts must be stored within the virtual machine and executed using ssh command. Scripts testrX.sh and pX_xdp.py are used to load rules into pcn-iptables and thus must be located on VM as well.
 
 For negative test-cases, the first script for each test-case summons a pcap file required for the given rule-set. It is then used in the third script. Scripts for negative test-case end with "_pc.sh"; txdp_mod_pc.sh (XDP ACL for modified rules), txp_pc.sh, tip_mod_pc.sh, tip_pc.sh, with the scripts for irq assignment and testing are tpc_irq.sh and ts_pcap.sh.
 For pcn-iptables, the scripts are tpcn_pc.sh and tpcn_pcap.sh, the script for irq assignment is the same.
