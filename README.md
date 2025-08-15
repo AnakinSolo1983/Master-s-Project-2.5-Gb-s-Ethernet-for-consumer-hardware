@@ -3,116 +3,117 @@
 This project is done for MEng in Electronics and Computer Engineering. The purpose of it is to investigate the possibilities to improve speed and processing network packets operating over high-speed modern network interfaces by monitoring the performance of packet processing in the Linux kernel and optimizing it.
 
 ## Project Scope
-Up to now, the Internet has developed and is developing exponentially, and with it, increases the number of network applications. However, this has also led to the increase in need for speed and high performance for the networking subsystem of the Operating System (OS). 
 
-The Hardware (HW) has advanced in the past decade. This includes the increase of speed of the Network Interface Card (NIC), modern NICs supporting multiple RX and TX hardware queues such as RSS and flow direct, and the increase of available cores for the CPUs. This improved the rate of transmitting data using the physical link. 
+Netfilter based solutions (iptables/nftables) became a de-facto standard firewall for Linux. From other hand, introduction of new high-speed ethernet standards introduce new performance requirements for packet processing that iptables/nftables are not always able to satisfy. In particular, for large number of filter rules. In parallel, several eBPF/XDP based approaches for input packet filtering have been emerged. In this research I investigate ability for XDP based approaches to provide comparable or even better performance than conventional netfilter solutions, especially for the case with big (up to 10K) number of stateless filtering rules. Two different solutions are considered: one is represented by pcn-iptables and uses Linear Bit Vector Search (LBVS) algorithm underneath, while second adopts DPDK ACL packet classification method based on multi-bit tries. 
 
-However, there are several drawbacks in the processing of packets. In user space, a socket API summaries a network communication channel, using the kernel TCP/IP stack underneath. In networking, sockets are created, initialized, connected, then wait for a connection, and in the end, close. 
+## Contents
 
-Packet processing involves 2 main mechanisms: 
+The repository consists of four directories; results, rules, scripts and xdp-acl. 
 
-    • Polling: CPU checks another device’s status to determine whether or not the device needs attention. It involves a loop in which queries are sent to the device and awaiting a response repeatedly until the loop ends with the obtained data or preferred outcome. 
-    • Interruption: the device informs the CPU its need of attention by sending an interrupt signal to the CPU when an event occurs or when data is ready. This causes the CPU to halt any activities it does currently and attend to the device that interrupted it. Traditional packet processing involves interruption. 
+### Results
 
-Problems associated with packet processing:
+The **results** directory consists of the results gained during the testing. There are two main test-cases; positive and negative.
 
-    • High Interruption Frequency problem: Instead of concentrating on processing packet, the processor would concentrate more on handling interruption due to the high rate of incoming packets.
-    • Cross-Core Scheduling problem: transmitting a packet from one core’s local cache to the local cache of another core.
-    • Uneven Distribution problem: when the number of tasks is spread unevenly among the cores. Some cores process much more tasks than the other cores.
+<ul><li>Positive test-cases: involves simply using wrk to stress the network stack.</li><li>Negative test-cases: involves running wrk along with pcap, to generate "malicious" traffic to simulate a DDoS attack on the server.</li></ul>
 
-Several techniques were developed to speedup packet processing: 
+In addition, there is a run0 directory, which consists of results for the test involving *no* rules.
 
-    • Batch processing: instead of one packet per system call, a group or batch of packets can be processed. Used in Netmap, DPDK and Netslices. Reduces the number of system calls. 
-    • Zero-copy: Zero-copy is a technique used to avoid copying packets from kernel space to user space. While Netmap, PF RING and DPDK use it, however, NAPI, BPS and Netslices still copy packets. 
-    • Parallelism: used in Netslices, where CPU cores and NIC queues are divided into slices. Parallelism is also included in DPDK. 
-    • Polling: polling is used to keep both the processors and threads active when the rate of incoming packets is low, in order to avoid interrupt processing overhead. Widely used within DPDK. 
-    • Direct Cache Access (DCA): transmits packets directly to the cache. The processor then reads it not from the memory, but from the cache, reducing the memory access frequency and make processing more efficient.
+Each test-case of the two main consists of similar test-cases:
 
-There are various solutions such as NAPI, Busy Poll Socket, Netmap and DPDK. 
+<ul><li>XDP_ACL_(mod_for_pcn): consists of tests performed for rules using the XDP ACL program, using rules modified for pcn-iptables.</li><li>XDP_ACL_(orig_rules): consists of tests performed for rules using the XDP ACL program, but with the original, non-modified rules.</li></ul>
 
-### NAPI
+<ul><li>nftables_(mod_for_pcn): consists of tests performed for rules using Netfilter, using the rules modified for pcn-iptables.</li><li>nftables_(orig_rules): consists of tests performed for rules using Netfilter, but with the original, non-modified rules.</li></ul>
 
-It is packet-processing API that involves both polling and interruption. The main idea of NAPI is that instead of handling one packet for each interruption, take multiple. It handles a batch of packets for each interruption instead of for each packet and reduces the frequency of high interruption, giving CPU more time to process other packets. However, at low rate of packet arrival, the frequency of cores sleeping increases. This increases the time for cores to wake up when new packets arrive and increase packet processing latency.
+<ul><li>pcn-iptables: consists of tests performed for modified rules loaded into pcn-iptables within a virtual machine (VM), which acts as server.</li></ul>
 
-### BPS
+Each directory in the list has 5 sets of results, with the exception of pcn-iptables, which has only 4 sets of results. Each set is based on the respective set of rules used for testing. The 'orig' in the names mean that the original rule-sets were used, while 'mod_for_pcn' means using modified rules.
 
-BPS (Busy Poll Socket) is an improvement to NAPI in regards to processor cores sleep frequency. Threads do not fall asleep often and constantly poll. Its disadvantage – excessive polling when there no incoming packets – wasted CPU cycles.
+<ins>test-case result structure</ins>:
 
-### DPDK
+<ul><li><ins>run1</ins>: 10 rules.</li><li><ins>run2</ins>: 91 rules.</li><li><ins>run3</ins>: 455 rules.</li><li><ins>run4</ins>: 8676 rules.</li><li><ins>run5</ins>: 5000 rules.</li></ul>
 
-DPDK (Data Plane Development Kit) consists of libraries for fast and efficient data packet processing functions. Environment Abstraction Layer (EAL) is used to gain access to hardware directly from user-space. The Poll Mode Drivers (PMD) deliver packets straight to user programs. Its advantage is that the user-space I/O prevents encountering the massive process of interruption and copying data between the two spaces, kernel and user. Its disadvantage – complete kernel bypass – prevents processing services and the security guarantees which are provided by the kernel protocol stack.
+Each run directory consists of multiple files, containing the data observed during testing.
 
-### XDP
+Here is the structure:
+<ul><li><ins>wrk.outX:</ins> this file contains the calculated queries per second performed by wrk for every client that generates traffic to the server. X is one of the four clients.</li><li><ins>wrkstat.out:</ins> contains the sum of all queries per second.</li><li><ins>mpstat0.out</ins>: contains information of the load on the CPUs used for testing.</li><li><ins>irqstat.out</ins>: Information on the irqs assigned to CPUs for server and client. It is viewed twice: before and after the testing.</li></ul>
 
-The next solution is XDP (Express Data Path), an eBPF-based high-performance network data path which enables custom packet processing at the lowest level of the kernel network stack. XDP works by allowing user-defined programs to be loaded into the kernel, which can then process incoming packets before they reach the networking stack. This is achieved using the eBPF (extended Berkeley Packet Filter).
+Sometimes, there are additional files, depending on which of the 5 tests is performed. For XDP ACL, file *bpfstat.out* contains information on the BPF maps used. 
 
-## Design Approach
-XDP is chosen as the most efficient solution for this project and for numerous reasons:
+### Rules
 
-    • Speed and Low Overhead: Operates directly in the NIC driver, bypasses much of the kernel’s overhead, enabling faster packet processing. 
-    • Customizability: Allows developers to create custom packet-processing programs with eBPF, providing more flexibility and granularity than legacy tools like iptables. 
-    • Resource Efficiency: Does not require dedicating entire CPU cores to packet processing, unlike user-space solutions like DPDK. 
-    • Kernel Integration: XDP works within the Linux kernel, allowing seamless interaction with the existing kernel network stack and tools.
+The **rules** directory consists of the rule-sets used for testing. There are two categories of rules:
 
-## Detailed Timeline
-The next steps are to explore XDP usages to speedup early-stages network processing. Create (or reuse) an XDP based input packet filter (similar to Linux iptables INPUT tables). 
+<ul><li>Original: these are original rules.</li><li>Modified: these rules have been modified for the pcn-iptables.</li></ul>
 
-Next is to examine its performance to see how feasible it is to achieve 2.5 Gb/s line-speed and to compare with conventional iptables performance. Investigate impact of number of filter rules (and its complexity) on overall performance. Try to optimize, if necessary, its performance for high number of rules (10K+) 
-### Milestones
+For each category, there are 5 rule sets; 10, 91, 455, 5000 and 8676 rules. In addition, each rule set has its own trace file, a sequence of packet headers to exercise packet classification for a filter set.
 
-    • Setup testing and development environment in the campus lab 
-        ◦ 2-4 2.5Gb/s NICs (PCIe cards) required. 
-    • Get familiar with XDP and implement XDP based packet filter.
-    • Measure system performance for different set of rules. 
-    • Investigate optimisation opportunities and provide final report. 
+This is used in the XDP ACL tests, both with original and modified. Modified rules are named X_mod_rule, where X is either 1,2,3,5k or 10k. 
 
-### Timeline
+### Scripts
 
-    • Task 1: Test Setup
+The **scripts** directory consists of Bash and python scripts that are used to perform tests on the network performance for various test cases such as using Netfilter (iptables/nftables), pcn-iptables (in a virtual machine), and XDP ACL. 
 
-        1. First it is vital to setup 2.5 Gb/s NICs, configure them within Linux kernel and make sure they work properly. In particular, it must be ensured that packets are flowing between the two
+Each test consists of three Bash scripts:
 
-        2. To test the end-to-end user experience, I plan to use the http server/client scenario. The plan is to use nginx[1], as HTTP web server serving static content. The wrk[2], a tool generating load, will be used as a client to generate a load of packets sent to the server.
+<ul><li>The setup script that accesses the rule sets.</li><li>The irq script is used to assign the irqs to the CPU cores that are used for server and client. Though, when testing with pcn-iptables, the irq script on host machine will do the same, but only for client, the server assignment is written in a separate script located on VM.</li><li>The test script then performs the test itself, using nginx and wrk to simulate requests from 4 clients, putting the server under load.</li></ul>
 
-        3. For measuring performance, I plan to use
-            1. Throughput (Gb/s, Query-per-Second (QPS))
-            2. Average Query Latency (ms)
+Python scripts are used to read the rules from the files and express them in the required format for the tables.
 
-        4. To generate this maximum load on the server, I plan to use small size request/response over short-lived connections.
-        
-        5. If this set could not provide enough load for testing, it might be possible to use small UDP packets. A memcached server[3], might be a good fit for it due to its high performance in handling a large number of requests simultaneously. By caching data in memory, it allows rapid access and reduces latency.
+As stated in the results section, there are 2 main test-cases:
 
-As alternative scenarios for generating high network load might switch my test suite to use other network services such as FTP server, video streaming server, etc.
+<ul><li>Positive test-cases: involves simply using wrk to stress the network stack.</li><li>Negative test-cases: involves running wrk along with pcap, to generate "malicious" traffic to simulate a DDoS attack on the server.</li></ul>
 
-    • Task 2: Define Netfilter Rules
+Positive test-case scripts are test_ip.sh, test_xdp.sh, test_pcn.sh, test_xdp_mod.sh, test_ip_mod.sh, with the first two are used for Netfilter and XDP ACL with original rules, while the other three use the modified rules. Scripts test_irq.sh and test_prf.sh assign irqs to the cores and perform the test itself respectively for Netfilter and XDP ACL.
+For pcn, there are separate scripts; tpcn_irq.sh and tpcn_pf.sh that access the virtual machine.
 
-        1. First it is to measure the maximum possible performance for System Under Testing (SUT) without any netfilter rules. Take note of observations and results. That will be our baseline. 
+Scripts irqaft.sh, netflt.sh, nginx_kill.sh, nginx_start.sh, nginx_vm_setup.sh, perfcp.sh, perf_get.sh, servirq.sh, and xdp.sh are scripts used for testing with pcn-iptables, in which a virtual machine acts as the server. This scripts must be stored within the virtual machine and executed using ssh command. Scripts testrX.sh and pX_xdp.py are used to load rules into pcn-iptables and thus must be located on VM as well.
 
-        2. Next step is to define a set of netfilter rules on the SUT via iptables. The test will be repeated for every different sets of iptables’ rules, for example 100 rules, 1K, and 10K rules. 
+For negative test-cases, the first script for each test-case summons a pcap file required for the given rule-set. It is then used in the third script. Scripts for negative test-case end with "_pc.sh"; txdp_mod_pc.sh (XDP ACL for modified rules), txp_pc.sh, tip_mod_pc.sh, tip_pc.sh, with the scripts for irq assignment and testing are tpc_irq.sh and ts_pcap.sh.
+For pcn-iptables, the scripts are tpcn_pc.sh and tpcn_pcap.sh, the script for irq assignment is the same.
 
-        3. The SUT performance will be measured for each netfilter rule set. It is expected that the performance will degrade as the number of rules increases – the greater is the number of rules, the greater is the time required for the server to search through them.
+### XDP-ACL
 
-    • Task 3: XDP
+The **xdp-acl** directory contains a ```get_build.sh``` script which is used to clone DPDK, applying the patch in **xdp-acl/patch** and build it. It then compiles the XDP program that will be used for XDP ACL tests.
 
-        1. Task 3 involves using the existing XDP project – “pcn-iptables: a clone of iptables based on eBPF”[4]  to run an XDP program with the same set rules used for netfilter testing in task 2.
+## Additional
 
-        2. First step in task 3 is to setup the PCN, building and making it work. Next is measuring the SUT performance with XDP program for the same set of rules.
+### Trace Files
 
-        3. After achieving measurements and comparing them with the results achieved both with and without netfilter, the final task is to try improving the performance of XDP based program (if necessary). The ultimate goal is to demonstrate better performance done by XDP than by a conventional netfilter.
+Trace files have been generated using the Trace Generator tool from Classbench [1].
 
-## Success Criteria
+```
+classbench-ng/trace_generator/trace_generator <num_packets> <start_id> <end_id> <input_file>
+```
 
-The main aim of the project is to investigate ability of XDP based programs to improve performance of Linux packet filtering over high speed networks (2.5 GbE) comparing to traditional netfilter approach, while providing the same security mechanisms. This project will be considered successful if the following criteria are met:
+Where:
 
-    • Investigate ability for XDP based approach to provide comparable or even better performance results either higher throughput or reduced latency or both) then conventional netfilter approach. 
-    • If the XDP based approach will provide worse performance than the netfilter, try to figure out the main reasons for that behavior.
-    • Compile a research report, which summarizes all my findings for given subject.  
-       
+```
+<num_packets>: The total number of packets to generate.
+<start_id>: The starting identifier for the trace.
+<end_id>: The ending identifier for the trace.
+<input_file>: The path to the input file containing the ACL rules.
+```
+A generated trace file's name usually ends with a "_trace".
+
+### PCAP File Creation
+
+The script ```mk_pcap_u5.py```, located in the **scripts** directory, is used to generate a pcap file. It works the following:
+
+```
+python3 mk_pcap_in_u5.py <path-to-trace-file> <path-to-pcap-file> <src-ether-addr> <dst-ether-addr> <size-of-packet>
+```
+
+For example;
+```
+python3 ../scripts/mk_pcap_in_u5.py ../dts/dep/test-acl-input/acl1v4_10k_trace ../test/acl/acl1v4_10k_trace_u1.pcap > 10:70:fd:30:43:c9 94:6d:ae:2e:79:f3 64
+```
+To send malicious traffic using the pcap file, use the following command:
+```
+ip netns exec ns2 time python3 send_pcap_u6.py dpdk-acl-bpf/${PCAP} enp88s0 100000 ${TMT} > /dev/null 2>1 &
+```
+Where ```send_pcap_u6.py``` does the job, it is also located in the **scripts** directory. ```PCAP``` and ```TMT``` are the pcap file and time respectively.
+
 ## References
-    1. Nginx main page https://nginx.org/
-    2. “wrk – a HTTP benchmarking tool”  https://github.com/wg/wrk
-    3. Hussein Nassar “Memcached Architecture” [Online] https://medium.com/@hnasr/memcached-architecture-af3369845c09
-    4. “pcn-iptables: a clone of iptables based on eBPF [Online] https://polycube-network.readthedocs.io/en/latest/components/iptables/pcn-iptables.html
 
-
+[1] https://github.com/classbench-ng/classbench-ng
 
