@@ -2,7 +2,7 @@
 
 #----------
 
-# This Bash script that handles file permissions for the perf data file stored in the VM, so that a copy of it can be transferred to the main machine, where the rest of the data for the test is stored.
+# This Bash script handles file permissions for the perf data file stored in the VM, so that a copy of it can be transferred to the main machine, where the rest of the data for the test is stored.
 
 #----------
 
