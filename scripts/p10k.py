@@ -7,7 +7,7 @@
 # Read the file with rules:
 with open('dts/dep/test-acl-input/acl1v4_10k_rule', 'r') as file:
 
-    # Extract the necessary fields of every rule.
+    # Extract the necessary fields of every rule:
     for line in file:
         parts = line.strip().split('\t')
         source = parts[0][1:]  # Remove the '@'
@@ -15,6 +15,6 @@ with open('dts/dep/test-acl-input/acl1v4_10k_rule', 'r') as file:
         source_ports = parts[2].replace(' : ', ':')
         dest_ports = parts[3].replace(' : ', ':')
         
-        # Generate iptables rule
+        # Generate iptables rule:
         rule = f"-A INPUT -s {source} -d {dest} -p tcp --sport {source_ports} --dport {dest_ports} -j DROP"
         print(rule)
