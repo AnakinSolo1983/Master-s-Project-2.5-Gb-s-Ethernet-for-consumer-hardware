@@ -1,0 +1,8 @@
+re_s/pcap/run1/wrk.out1:Requests/sec:  80630.42
+re_s/pcap/run1/wrk.out2:Requests/sec:  80843.11
+re_s/pcap/run1/wrk.out3:Requests/sec:  80670.89
+re_s/pcap/run1/wrk.out4:Requests/sec:  80257.68
+80630.42 80630.420000
+80843.11 161473.530000
+80670.89 242144.420000
+80257.68 322402.100000
