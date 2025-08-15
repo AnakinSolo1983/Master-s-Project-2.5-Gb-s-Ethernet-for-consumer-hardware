@@ -1,6 +1,6 @@
 #----------
 
-# This is a vital python script used reads a configuration file containing network rules and generates corresponding rules. The script processes each line of the file, extracts relevant information, and formats it into a command that can be executed in a Linux environment to manage network traffic. In this case, it accesses rules from the rule-set given by the parameter NUM. By analyzing a set of rules defined in a file, the script determines which rules should be applied and outputs them in a format suitable for use.
+# This is a vital python script reads a configuration file containing network rules and generates corresponding rules. The script processes each line of the file, extracts relevant information, and formats it into a command that can be executed in a Linux environment to manage network traffic. In this case, it accesses rules from the rule-set given by the parameter NUM. By analyzing a set of rules defined in a file, the script determines which rules should be applied and outputs them in a format suitable for use.
 
 #----------
 
