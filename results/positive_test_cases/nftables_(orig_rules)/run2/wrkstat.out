@@ -1,8 +1,0 @@
-netflt/run32/wrk.out1:Requests/sec:  86625.70
-netflt/run32/wrk.out2:Requests/sec:  85855.97
-netflt/run32/wrk.out3:Requests/sec:  85777.38
-netflt/run32/wrk.out4:Requests/sec:  85968.72
-86625.70 86625.700000
-85855.97 172481.670000
-85777.38 258259.050000
-85968.72 344227.770000
