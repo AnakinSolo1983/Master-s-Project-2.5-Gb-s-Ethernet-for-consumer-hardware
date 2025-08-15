@@ -1,6 +1,6 @@
 #----------
 
-# This is one of the Bash scripts used reads a configuration file containing network rules and generates corresponding iptables rules. The script processes each line of the file, extracts relevant information, and formats it into a command that can be executed in a Linux environment to manage network traffic. In this case, it accesses the 9785 rules from the fourth rule-set.
+# This is one of the python scripts used reads a configuration file containing network rules and generates corresponding iptables rules. The script processes each line of the file, extracts relevant information, and formats it into a command that can be executed in a Linux environment to manage network traffic. In this case, it accesses the 9785 rules from the fourth rule-set.
 
 #----------
 
