@@ -1,4 +1,4 @@
-NUM=${1}
+NUM=${1} # The rule set.
 cd polycube
 pwd
 polycubed -d
