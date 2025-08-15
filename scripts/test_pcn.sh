@@ -22,7 +22,6 @@ fi
 
 ssh -t olegvm@192.168.122.249 "sudo /bin/bash -x servirq.sh ${RSF}"
 
-#/home/olegvm/${RSF}/irqstat.out
 scp olegvm@192.168.122.249:/home/olegvm/${RSF}/sirqstat.out /home/oleg-ananiev/${RSF}
 /bin/bash -x t_pcn_irq.sh ${RSF}
 /bin/bash -x tpcn_pf.sh 20 hello 12 1000 ${RSF}
