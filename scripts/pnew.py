@@ -1,8 +1,6 @@
 from ipaddress import IPv4Address, IPv4Network
 import sys
 
-#print(sys.argv[1])
-#print(sys.argv[2])
 outp = str(sys.argv[2]) + "_mod_rule"
 print(outp)
 with open(str(sys.argv[1]), 'r') as file:
