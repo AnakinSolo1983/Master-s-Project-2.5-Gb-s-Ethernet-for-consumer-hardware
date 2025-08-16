@@ -4,7 +4,7 @@ This project is done for MEng in Electronics and Computer Engineering. The purpo
 
 ## Project Scope
 
-Netfilter based solutions (iptables/nftables) became a de-facto standard firewall for Linux. From other hand, introduction of new high-speed ethernet standards introduce new performance requirements for packet processing that iptables/nftables are not always able to satisfy. In particular, for large number of filter rules. In parallel, several eBPF/XDP based approaches for input packet filtering have been emerged. In this research I investigate ability for XDP based approaches to provide comparable or even better performance than conventional netfilter solutions, especially for the case with big (up to 10K) number of stateless filtering rules. Two different solutions are considered: one is represented by pcn-iptables and uses Linear Bit Vector Search (LBVS) algorithm underneath, while second adopts DPDK ACL packet classification method based on multi-bit tries. 
+Netfilter based solutions (iptables/nftables) became a de-facto standard firewall for Linux. From other hand, introduction of new high-speed ethernet standards introduce new performance requirements for packet processing that iptables/nftables are not always able to satisfy. In particular, for large number of filter rules. In parallel, several eBPF/XDP based approaches for input packet filtering have been emerged. In this research I investigate ability for XDP based approaches to provide comparable or even better performance than conventional netfilter solutions, especially for the case with big (up to 10K) number of stateless filtering rules. Two different solutions are considered: one is represented by pcn-iptables[2] and uses Linear Bit Vector Search (LBVS) algorithm underneath, while second adopts DPDK ACL packet classification method[5] based on multi-bit tries. 
 
 ## Contents
 
@@ -14,7 +14,7 @@ The repository consists of four directories; results, rules, scripts and xdp-acl
 
 The **results** directory consists of the results gained during the testing. There are two main test-cases; positive and negative.
 
-<ul><li>Positive test-cases: involves simply using wrk/nginx to stress the network stack.</li><li>Negative test-cases: involves running wrk along with replaying pcap, to generate "malicious" traffic to simulate a DDoS attack on the server.</li></ul>
+<ul><li>Positive test-cases: involves simply using wrk[4]/nginx[3] to stress the network stack.</li><li>Negative test-cases: involves running wrk along with replaying pcap, to generate "malicious" traffic to simulate a DDoS attack on the server.</li></ul>
 
 In addition, there is a run0 directory, which consists of results for the test involving *no* rules.
 
@@ -111,9 +111,13 @@ To send malicious traffic using the pcap file, use the following command:
 ```
 ip netns exec ns2 time python3 send_pcap_u6.py ${PCAP} enp88s0 100000 20 > /dev/null 2>1 &
 ```
-The ```send_pcap_u6.py``` script is also located in the **scripts** directory. ```PCAP``` is the pcap file. With this example, the script will send 100000 packets 20 times from pcap through device enp88s0.
+The ```send_pcap_u6.py``` script is also located in the **scripts** directory. ```PCAP``` is the pcap file. With this example, the script, using scapy[6], will send 100000 packets 20 times from pcap through device enp88s0.
 
 ## References
 
 [1] https://github.com/classbench-ng/classbench-ng
-
+[2] https://polycube-network.readthedocs.io/en/latest/components/iptables/pcn-iptables.html
+[3] https://nginx.org/
+[4] https://github.com/wg/wrk
+[5] https://doc.dpdk.org/guides/prog_guide/packet_classif_access_ctrl.html
+[6] https://scapy.readthedocs.io/en/latest/introduction.html
