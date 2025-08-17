@@ -115,7 +115,7 @@ The ```send_pcap_u6.py``` script is also located in the **scripts** directory. `
 
 ## Running the Tests
 
-To perform a test, here is the command to perform one of them:
+Here is an example to run a test against XDP ACL:
 
 ```
 /bin/bash -x test_xdp.sh 5 5k
