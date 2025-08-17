@@ -113,6 +113,21 @@ ip netns exec ns2 time python3 send_pcap_u6.py ${PCAP} enp88s0 100000 20 > /dev/
 ```
 The ```send_pcap_u6.py``` script is also located in the **scripts** directory. ```PCAP``` is the pcap file. With this example, the script, using scapy[6], will send 100000 packets 20 times from pcap through device enp88s0.
 
+## Running the Tests
+
+To perform a test, here is the command to perform one of them:
+
+```
+/bin/bash -x test_xdp.sh 5 5k
+```
+Where test_xdp.sh is the script to test XDP ACL with modified rules. The ```5``` parameter is the number of ```run``` directory where the collected data for this test will be stored, while ```5k``` is the rule-set. In this example, the rule-set is the 5000 rules.
+
+For the other test scripts, the command structure is the same, except for tests involving the Virtual Machine.
+```
+/bin/bash -x test_pcn.sh C xdp 3
+```
+Here, the ```xdp``` and ```3``` parameters mean that the rules from the third rule-set will be loaded into pcn-iptables within the VM. The collected data will be stored in directory ```runC```.
+
 ## References
 
 [1] https://github.com/classbench-ng/classbench-ng
