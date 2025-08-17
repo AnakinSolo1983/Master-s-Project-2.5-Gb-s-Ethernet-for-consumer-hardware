@@ -120,7 +120,7 @@ To perform a test, here is the command to perform one of them:
 ```
 /bin/bash -x test_xdp.sh 5 5k
 ```
-Where test_xdp.sh is the script to test XDP ACL with modified rules. The ```5``` parameter is the number of ```run``` directory where the collected data for this test will be stored, while ```5k``` is the rule-set. In this example, the rule-set is the 5000 rules.
+Where test_xdp.sh is the script for XDP ACL with modified rules. The ```5``` parameter is the number of ```run``` directory where the collected data for this test will be stored, while ```5k``` is the rule-set. In this example, the rule-set is the 5000 rules.
 
 For the other test scripts, the command structure is the same, except for tests involving the Virtual Machine.
 ```
