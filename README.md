@@ -118,9 +118,9 @@ The ```send_pcap_u6.py``` script is also located in the **scripts** directory. `
 Here is an example to run a test against XDP ACL:
 
 ```
-/bin/bash -x test_xdp.sh 5 5k
+/bin/bash -x test_xdp_mod.sh 5 5k
 ```
-Where test_xdp.sh is the script for XDP ACL with modified rules. The ```5``` parameter is the number of ```run``` directory where the collected data for this test will be stored, while ```5k``` is the rule-set. In this example, the rule-set is the 5000 rules.
+Where test_xdp_mod.sh is the script for XDP ACL with modified rules. The ```5``` parameter is the number of ```run``` directory where the collected data for this test will be stored, while ```5k``` is the rule-set. In this example, the rule-set is the 5000 rules.
 
 For the other test scripts, the command structure is the same, except for tests involving the Virtual Machine.
 ```
